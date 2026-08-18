@@ -19,11 +19,14 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                => $this->id,
-            'name'              => $this->name,
-            'email'             => $this->email,
-            'email_verified_at' => $this->email_verified_at,
-            'created_at'        => $this->created_at,
+            'id'                   => $this->id,
+            'name'                 => $this->name,
+            'email'                => $this->email,
+            'email_verified_at'    => $this->email_verified_at,
+            'profile'              => new ProfileResource($this->whenLoaded('profile')),
+            'interests'            => InterestResource::collection($this->whenLoaded('interests')),
+            'profile_completion'   => app(\App\Services\ProfileCompletionService::class)->calculate($this->resource),
+            'created_at'           => $this->created_at,
         ];
     }
 }

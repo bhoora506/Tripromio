@@ -53,3 +53,14 @@ Route::middleware('auth:sanctum')->prefix('email')->group(function () {
         ->name('verification.send');
 });
 
+// --- Profile & Interests ---
+Route::get('/interests', [\App\Http\Controllers\InterestController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show']);
+    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update']);
+    Route::put('/profile/interests', [\App\Http\Controllers\ProfileController::class, 'updateInterests']);
+    Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'uploadPhoto']);
+    Route::delete('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'deletePhoto']);
+});
+

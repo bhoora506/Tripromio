@@ -30,4 +30,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'password'          => 'hashed',
         ];
     }
+
+    // ── Relationships ─────────────────────────────────────────────────────────
+
+    public function profile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    public function interests(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Interest::class, 'user_interests')->withTimestamps();
+    }
 }
