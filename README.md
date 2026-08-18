@@ -130,46 +130,44 @@ Expected response:
 
 ---
 
-## Useful Artisan Commands
+## Authentication API
 
+All auth endpoints live under `/api/auth`. Tokens follow the Bearer scheme.
+
+| Method | Endpoint | Auth Required | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | No | Register a new account |
+| `POST` | `/api/auth/login` | No | Login and receive a token |
+| `GET` | `/api/auth/me` | Yes | Get the authenticated user |
+| `POST` | `/api/auth/logout` | Yes | Revoke the current token |
+| `POST` | `/api/auth/forgot-password` | No | Request a password reset link |
+| `POST` | `/api/auth/reset-password` | No | Reset password using the emailed token |
+| `GET` | `/api/email/verify/{id}/{hash}` | Yes | Verify email address (signed URL) |
+| `POST` | `/api/email/verification-notification` | Yes | Resend verification email |
+
+**Authenticated requests** require:
+```
+Authorization: Bearer <token>
+```
+
+---
+
+## Email Verification (Local Development)
+
+The project uses `MAIL_MAILER=log` locally. Verification emails are written to `storage/logs/laravel.log` instead of being delivered.
+
+To find the verification link during local testing:
 ```bash
-# Check Laravel version
-php artisan --version
-
-# List all registered routes
-php artisan route:list
-
-# Check migration status
-php artisan migrate:status
-
-# Run tests
-php artisan test
+# Search the log for the verification URL
+findstr "verify" storage\logs\laravel.log
 ```
 
----
-
-## Architecture
-
-```text
-Route → Controller → Form Request / Validation → Service → Model / Query → Database
+Alternatively, you can manually generate a signed verification URL in Tinker:
+```bash
+php artisan tinker
+>>> $user = App\Models\User::first();
+>>> URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]);
 ```
-
-- Controllers are thin.
-- Business logic lives in service classes.
-- API responses use the `App\Traits\ApiResponse` trait.
-- Authentication uses Laravel Sanctum (token-based).
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Laravel 13 |
-| Database | MySQL 8 |
-| Authentication | Laravel Sanctum |
-| API | REST JSON |
-| Mobile Client | Flutter (future) |
 
 ---
 

@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\HealthController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,17 +10,46 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 |
-| These routes are loaded by the RouteServiceProvider within the "api"
-| middleware group. All routes here carry the /api prefix automatically.
+| All routes here carry the /api prefix automatically.
 |
 */
 
 // --- Public ---
 Route::get('/health', HealthController::class);
 
-// --- Authenticated (Sanctum token guard) ---
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+// --- Authentication ---
+Route::prefix('auth')->group(function () {
+
+    // Public auth endpoints — rate-limited to protect against brute force.
+    Route::post('/register', [AuthController::class, 'register'])
+        ->middleware('throttle:10,1');
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1');
+
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
+
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->name('password.reset');
+
+    // Protected auth endpoints — require valid Sanctum token.
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
+
+// --- Email Verification ---
+// These routes require authentication (user must be logged in to verify/resend).
+Route::middleware('auth:sanctum')->prefix('email')->group(function () {
+    Route::get('/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware('signed')
+        ->name('verification.verify');
+
+    Route::post('/verification-notification', [EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+});
+
