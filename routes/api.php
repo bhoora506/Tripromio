@@ -64,3 +64,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'deletePhoto']);
 });
 
+// --- Trips ---
+Route::middleware('auth:sanctum')->group(function () {
+    // My trips list (paginated, owner's trips only)
+    Route::get('/my/trips', [\App\Http\Controllers\TripController::class, 'myTrips']);
+
+    // Trip CRUD
+    Route::post('/trips', [\App\Http\Controllers\TripController::class, 'store']);
+    Route::get('/trips/{trip}', [\App\Http\Controllers\TripController::class, 'show']);
+    Route::put('/trips/{trip}', [\App\Http\Controllers\TripController::class, 'update']);
+
+    // Trip lifecycle
+    Route::post('/trips/{trip}/publish', [\App\Http\Controllers\TripController::class, 'publish']);
+    Route::post('/trips/{trip}/cancel', [\App\Http\Controllers\TripController::class, 'cancel']);
+});
+
+
