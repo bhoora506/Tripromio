@@ -42,4 +42,31 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Interest::class, 'user_interests')->withTimestamps();
     }
+
+    /**
+     * Trips created/owned by this user (via trips.user_id).
+     */
+    public function trips(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Trip::class, 'user_id');
+    }
+
+    /**
+     * All TripMember rows for this user (owner + member rows, all trips, all statuses).
+     */
+    public function tripMembers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TripMember::class);
+    }
+
+    /**
+     * Trips the user is an active member of (including trips they own).
+     * Useful for "my trips" feed.
+     */
+    public function tripsJoined(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Trip::class, 'trip_members')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
 }
