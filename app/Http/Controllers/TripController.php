@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Trip\CreateTripRequest;
+use App\Http\Requests\Trip\TripDiscoveryRequest;
 use App\Http\Requests\Trip\UpdateTripRequest;
 use App\Http\Resources\TripResource;
 use App\Models\Trip;
+use App\Services\TripDiscoveryService;
 use App\Services\TripService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -16,8 +18,37 @@ class TripController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(private readonly TripService $tripService)
+    public function __construct(
+        private readonly TripService $tripService,
+        private readonly TripDiscoveryService $discoveryService,
+    ) {
+    }
+
+    /**
+     * Trip discovery — paginated feed of published trips.
+     * Excludes the authenticated user's own trips.
+     * GET /api/trips
+     */
+    public function index(TripDiscoveryRequest $request): JsonResponse
     {
+        $trips = $this->discoveryService->discover(
+            authenticatedUserId: $request->user()->id,
+            filters: $request->validated(),
+        );
+
+        return $this->successResponse(
+            data: [
+                'items'      => TripResource::collection($trips->items()),
+                'pagination' => [
+                    'total'        => $trips->total(),
+                    'per_page'     => $trips->perPage(),
+                    'current_page' => $trips->currentPage(),
+                    'last_page'    => $trips->lastPage(),
+                    'has_more'     => $trips->hasMorePages(),
+                ],
+            ],
+            message: 'Trips retrieved successfully.',
+        );
     }
 
     /**

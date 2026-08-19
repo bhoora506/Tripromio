@@ -69,6 +69,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // My trips list (paginated, owner's trips only)
     Route::get('/my/trips', [\App\Http\Controllers\TripController::class, 'myTrips']);
 
+    // Trip discovery (published trips from other users, paginated + filtered)
+    Route::get('/trips', [\App\Http\Controllers\TripController::class, 'index']);
+
     // Trip CRUD
     Route::post('/trips', [\App\Http\Controllers\TripController::class, 'store']);
     Route::get('/trips/{trip}', [\App\Http\Controllers\TripController::class, 'show']);
