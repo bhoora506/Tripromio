@@ -78,4 +78,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(TravelAvailability::class);
     }
+
+    /**
+     * Preferred destinations for the user.
+     */
+    public function preferredDestinations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PreferredDestination::class);
+    }
 }

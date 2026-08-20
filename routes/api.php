@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PreferredDestinationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -57,11 +59,17 @@ Route::middleware('auth:sanctum')->prefix('email')->group(function () {
 Route::get('/interests', [\App\Http\Controllers\InterestController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show']);
-    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update']);
-    Route::put('/profile/interests', [\App\Http\Controllers\ProfileController::class, 'updateInterests']);
-    Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'uploadPhoto']);
-    Route::delete('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'deletePhoto']);
+    // Profile Management
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/interests', [ProfileController::class, 'updateInterests']);
+    Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto']);
+    Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto']);
+
+    // Preferred Destinations
+    Route::apiResource('profile/destinations', PreferredDestinationController::class)
+         ->parameter('destinations', 'destination')
+         ->except(['show']);
 
     // Travel Availability — user's own windows only
     Route::get('/profile/availability', [\App\Http\Controllers\TravelAvailabilityController::class, 'index']);
