@@ -21,6 +21,10 @@ class TripService
     public function createTrip(User $owner, array $data): Trip
     {
         return DB::transaction(function () use ($owner, $data) {
+            $interestIds = $data['interest_ids'] ?? [];
+            // Remove non-model fields before creating the Trip record
+            unset($data['interest_ids']);
+
             $trip = Trip::create([
                 ...$data,
                 'user_id' => $owner->id,
@@ -34,6 +38,11 @@ class TripService
                 'status'    => MemberStatus::Active->value,
                 'joined_at' => null, // owner creates, not joins
             ]);
+
+            // Sync trip interests if provided
+            if (! empty($interestIds)) {
+                $trip->interests()->sync(array_unique($interestIds));
+            }
 
             return $trip;
         });
@@ -53,6 +62,9 @@ class TripService
      */
     public function updateTrip(Trip $trip, array $data): Trip
     {
+        $interestIds = array_key_exists('interest_ids', $data) ? $data['interest_ids'] : false;
+        unset($data['interest_ids']);
+
         match ($trip->status) {
             TripStatus::Completed,
             TripStatus::Cancelled => throw new \Symfony\Component\HttpKernel\Exception\HttpException(
@@ -63,6 +75,11 @@ class TripService
         };
 
         $trip->update($data);
+
+        // Sync interests only when the key was explicitly present in the request
+        if ($interestIds !== false) {
+            $trip->interests()->sync(array_unique((array) $interestIds));
+        }
 
         return $trip->fresh();
     }

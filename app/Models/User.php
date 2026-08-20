@@ -69,4 +69,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withPivot(['role', 'status', 'joined_at'])
             ->withTimestamps();
     }
+
+    /**
+     * Travel availability windows for this user.
+     * A user may have multiple non-overlapping or overlapping windows.
+     */
+    public function travelAvailabilities(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TravelAvailability::class);
+    }
 }

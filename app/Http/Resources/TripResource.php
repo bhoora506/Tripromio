@@ -44,6 +44,7 @@ class TripResource extends JsonResource
             'max_members'     => $this->max_members,
             'status'          => $this->status?->value,
             'owner'           => new TripOwnerResource($this->whenLoaded('owner')),
+            'interests'       => InterestResource::collection($this->whenLoaded('interests')),
             'member_count'    => $activeMemberCount,
             'remaining_slots' => $remainingSlots,
             'created_at'      => $this->created_at,

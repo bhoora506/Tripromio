@@ -20,18 +20,21 @@ class UpdateTripRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'       => ['sometimes', 'string', 'min:3', 'max:200'],
-            'destination' => ['sometimes', 'string', 'max:200'],
-            'place_id'    => ['sometimes', 'nullable', 'string', 'max:100'],
-            'latitude'    => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
-            'longitude'   => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
-            'start_date'  => ['sometimes', 'date'],
-            'end_date'    => ['sometimes', 'date', 'after_or_equal:start_date'],
-            'budget_min'  => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'budget_max'  => ['sometimes', 'nullable', 'numeric', 'min:0', 'gte:budget_min'],
-            'trip_type'   => ['sometimes', 'string', Rule::in(TripType::values())],
-            'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'max_members' => ['sometimes', 'integer', 'min:2', 'max:20'],
+            'title'         => ['sometimes', 'string', 'min:3', 'max:200'],
+            'destination'   => ['sometimes', 'string', 'max:200'],
+            'place_id'      => ['sometimes', 'nullable', 'string', 'max:100'],
+            'latitude'      => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude'     => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'start_date'    => ['sometimes', 'date'],
+            'end_date'      => ['sometimes', 'date', 'after_or_equal:start_date'],
+            'budget_min'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'budget_max'    => ['sometimes', 'nullable', 'numeric', 'min:0', 'gte:budget_min'],
+            'trip_type'     => ['sometimes', 'string', Rule::in(TripType::values())],
+            'description'   => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'max_members'   => ['sometimes', 'integer', 'min:2', 'max:20'],
+            // Trip interests — replaces the full interest list when provided (sync semantics)
+            'interest_ids'   => ['sometimes', 'nullable', 'array', 'max:10'],
+            'interest_ids.*' => ['integer', 'exists:interests,id'],
         ];
     }
 

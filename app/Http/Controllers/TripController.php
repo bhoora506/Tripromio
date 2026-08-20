@@ -62,7 +62,7 @@ class TripController extends Controller
             data:  $request->validated(),
         );
 
-        $trip->load('owner');
+        $trip->load('owner', 'interests');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -80,7 +80,7 @@ class TripController extends Controller
     {
         $this->authorize('view', $trip);
 
-        $trip->load('owner');
+        $trip->load('owner', 'interests');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -99,7 +99,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->updateTrip($trip, $request->validated());
 
-        $trip->load('owner');
+        $trip->load('owner', 'interests');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -116,7 +116,7 @@ class TripController extends Controller
     {
         $trips = $request->user()
             ->trips()
-            ->with('owner')
+            ->with('owner', 'interests')
             ->withCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')])
             ->latest()
             ->paginate(15);
@@ -146,7 +146,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->publishTrip($trip);
 
-        $trip->load('owner');
+        $trip->load('owner', 'interests');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -165,7 +165,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->cancelTrip($trip);
 
-        $trip->load('owner');
+        $trip->load('owner', 'interests');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(

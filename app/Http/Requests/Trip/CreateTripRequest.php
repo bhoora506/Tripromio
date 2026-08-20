@@ -19,18 +19,21 @@ class CreateTripRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'       => ['required', 'string', 'min:3', 'max:200'],
-            'destination' => ['required', 'string', 'max:200'],
-            'place_id'    => ['nullable', 'string', 'max:100'],
-            'latitude'    => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude'   => ['nullable', 'numeric', 'between:-180,180'],
-            'start_date'  => ['required', 'date', 'after_or_equal:today'],
-            'end_date'    => ['required', 'date', 'after_or_equal:start_date'],
-            'budget_min'  => ['nullable', 'numeric', 'min:0'],
-            'budget_max'  => ['nullable', 'numeric', 'min:0', 'gte:budget_min'],
-            'trip_type'   => ['required', 'string', Rule::in(TripType::values())],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'max_members' => ['required', 'integer', 'min:2', 'max:20'],
+            'title'         => ['required', 'string', 'min:3', 'max:200'],
+            'destination'   => ['required', 'string', 'max:200'],
+            'place_id'      => ['nullable', 'string', 'max:100'],
+            'latitude'      => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'     => ['nullable', 'numeric', 'between:-180,180'],
+            'start_date'    => ['required', 'date', 'after_or_equal:today'],
+            'end_date'      => ['required', 'date', 'after_or_equal:start_date'],
+            'budget_min'    => ['nullable', 'numeric', 'min:0'],
+            'budget_max'    => ['nullable', 'numeric', 'min:0', 'gte:budget_min'],
+            'trip_type'     => ['required', 'string', Rule::in(TripType::values())],
+            'description'   => ['nullable', 'string', 'max:5000'],
+            'max_members'   => ['required', 'integer', 'min:2', 'max:20'],
+            // Trip interests — optional on create; IDs must exist in the interests table
+            'interest_ids'   => ['sometimes', 'nullable', 'array', 'max:10'],
+            'interest_ids.*' => ['integer', 'exists:interests,id'],
         ];
     }
 

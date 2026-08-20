@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -113,6 +114,15 @@ class Trip extends Model
             'id',        // local key on trips
             'user_id',   // local key on trip_members
         );
+    }
+
+    /**
+     * Interests associated with this trip.
+     * Shared master table with user_interests.
+     */
+    public function interests(): BelongsToMany
+    {
+        return $this->belongsToMany(Interest::class, 'trip_interests')->withTimestamps();
     }
 
     // ── Computed helpers ───────────────────────────────────────────────────────

@@ -62,6 +62,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/interests', [\App\Http\Controllers\ProfileController::class, 'updateInterests']);
     Route::post('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'uploadPhoto']);
     Route::delete('/profile/photo', [\App\Http\Controllers\ProfileController::class, 'deletePhoto']);
+
+    // Travel Availability — user's own windows only
+    Route::get('/profile/availability', [\App\Http\Controllers\TravelAvailabilityController::class, 'index']);
+    Route::post('/profile/availability', [\App\Http\Controllers\TravelAvailabilityController::class, 'store']);
+    Route::put('/profile/availability/{availability}', [\App\Http\Controllers\TravelAvailabilityController::class, 'update']);
+    Route::delete('/profile/availability/{availability}', [\App\Http\Controllers\TravelAvailabilityController::class, 'destroy']);
 });
 
 // --- Trips ---
