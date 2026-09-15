@@ -82,6 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // My trips list (paginated, owner's trips only)
     Route::get('/my/trips', [\App\Http\Controllers\TripController::class, 'myTrips']);
+    
+    // My joined trips (paginated, member role only)
+    Route::get('/my/joined-trips', [\App\Http\Controllers\TripController::class, 'joinedTrips']);
 
     // Trip discovery (published trips from other users, paginated + filtered)
     Route::get('/trips', [\App\Http\Controllers\TripController::class, 'index']);
@@ -94,6 +97,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Trip lifecycle
     Route::post('/trips/{trip}/publish', [\App\Http\Controllers\TripController::class, 'publish']);
     Route::post('/trips/{trip}/cancel', [\App\Http\Controllers\TripController::class, 'cancel']);
+
+    // Trip members
+    Route::get('/trips/{trip}/members', [\App\Http\Controllers\TripMemberController::class, 'index']);
 
     // --- D.1: Trip Join Requests ---
     // Submit a join request (authenticated user → published trip)

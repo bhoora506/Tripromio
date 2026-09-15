@@ -62,7 +62,7 @@ class TripController extends Controller
             data:  $request->validated(),
         );
 
-        $trip->load('owner', 'interests');
+        $trip->load('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -80,7 +80,7 @@ class TripController extends Controller
     {
         $this->authorize('view', $trip);
 
-        $trip->load('owner', 'interests');
+        $trip->load('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -99,7 +99,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->updateTrip($trip, $request->validated());
 
-        $trip->load('owner', 'interests');
+        $trip->load('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -116,7 +116,7 @@ class TripController extends Controller
     {
         $trips = $request->user()
             ->trips()
-            ->with('owner', 'interests')
+            ->with('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest')
             ->withCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')])
             ->latest()
             ->paginate(15);
@@ -137,6 +137,36 @@ class TripController extends Controller
     }
 
     /**
+     * List the authenticated user's joined trips (non-owner).
+     * GET /api/my/joined-trips
+     */
+    public function joinedTrips(Request $request): JsonResponse
+    {
+        $trips = $request->user()
+            ->tripsJoined()
+            ->wherePivot('role', \App\Enums\MemberRole::Member->value)
+            ->wherePivot('status', \App\Enums\MemberStatus::Active->value)
+            ->with('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest')
+            ->withCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')])
+            ->latest()
+            ->paginate(15);
+
+        return $this->successResponse(
+            data: [
+                'items'      => TripResource::collection($trips->items()),
+                'pagination' => [
+                    'total'        => $trips->total(),
+                    'per_page'     => $trips->perPage(),
+                    'current_page' => $trips->currentPage(),
+                    'last_page'    => $trips->lastPage(),
+                    'has_more'     => $trips->hasMorePages(),
+                ],
+            ],
+            message: 'Joined trips retrieved successfully.',
+        );
+    }
+
+    /**
      * Publish a draft trip (owner only).
      * POST /api/trips/{trip}/publish
      */
@@ -146,7 +176,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->publishTrip($trip);
 
-        $trip->load('owner', 'interests');
+        $trip->load('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(
@@ -165,7 +195,7 @@ class TripController extends Controller
 
         $trip = $this->tripService->cancelTrip($trip);
 
-        $trip->load('owner', 'interests');
+        $trip->load('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest');
         $trip->loadCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')]);
 
         return $this->successResponse(

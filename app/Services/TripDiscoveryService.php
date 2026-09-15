@@ -58,7 +58,7 @@ class TripDiscoveryService
         $perPage = (int) ($filters['per_page'] ?? 20);
 
         $query = Trip::query()
-            ->with('owner', 'interests')
+            ->with('owner', 'interests', 'currentUserMembership', 'currentUserJoinRequest')
             ->withCount(['tripMembers as active_members_count' => fn ($q) => $q->where('status', 'active')])
             // ── Base visibility rules ──────────────────────────────────────
             ->where('status', TripStatus::Published->value)

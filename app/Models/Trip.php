@@ -146,6 +146,22 @@ class Trip extends Model
     // ── Computed helpers ───────────────────────────────────────────────────────
 
     /**
+     * The authenticated user's confirmed membership for this trip, if any.
+     */
+    public function currentUserMembership(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TripMember::class)->where('user_id', auth()->id());
+    }
+
+    /**
+     * The authenticated user's latest join request for this trip, if any.
+     */
+    public function currentUserJoinRequest(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TripJoinRequest::class)->where('user_id', auth()->id())->latestOfMany();
+    }
+
+    /**
      * Returns the number of currently active member slots remaining.
      * (max_members includes the owner, so we subtract active member count.)
      */
