@@ -77,15 +77,20 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // 409 / 4xx — HttpException (state conflicts, business rule violations).
+        // Thrown by TripService and TripJoinRequestService for conflict/business errors.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'Request could not be processed.',
+                ], $e->getStatusCode());
+            }
+        });
+
         // 500 — Generic server error.
-        // HttpExceptions (403, 404, 405…) are intentionally excluded here;
-        // Laravel's own handler produces the correct status for those.
         // In production: generic message only. Locally with APP_DEBUG=true: real message surfaced.
         $exceptions->render(function (Throwable $e, Request $request) {
-            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
-                return null; // Let Laravel's default handler produce the correct HTTP status.
-            }
-
             if ($request->is('api/*') || $request->expectsJson()) {
                 $debug = config('app.debug');
 
@@ -96,4 +101,5 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })->create();
+
 

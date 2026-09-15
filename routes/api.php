@@ -94,6 +94,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // Trip lifecycle
     Route::post('/trips/{trip}/publish', [\App\Http\Controllers\TripController::class, 'publish']);
     Route::post('/trips/{trip}/cancel', [\App\Http\Controllers\TripController::class, 'cancel']);
+
+    // --- D.1: Trip Join Requests ---
+    // Submit a join request (authenticated user → published trip)
+    Route::post('/trips/{trip}/join-requests', [\App\Http\Controllers\TripJoinRequestController::class, 'store']);
+
+    // View incoming join requests (trip owner only)
+    Route::get('/trips/{trip}/join-requests', [\App\Http\Controllers\TripJoinRequestController::class, 'index']);
+
+    // Approve a pending request (trip owner only)
+    Route::post('/trips/{trip}/join-requests/{joinRequest}/approve', [\App\Http\Controllers\TripJoinRequestController::class, 'approve']);
+
+    // Reject a pending request (trip owner only)
+    Route::post('/trips/{trip}/join-requests/{joinRequest}/reject', [\App\Http\Controllers\TripJoinRequestController::class, 'reject']);
+
+    // Cancel a pending request (requester only)
+    Route::post('/trips/{trip}/join-requests/{joinRequest}/cancel', [\App\Http\Controllers\TripJoinRequestController::class, 'cancel']);
 });
-
-

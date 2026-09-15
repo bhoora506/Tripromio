@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\JoinRequestStatus;
 use App\Enums\MemberRole;
 use App\Enums\MemberStatus;
 use App\Enums\TripStatus;
@@ -123,6 +124,23 @@ class Trip extends Model
     public function interests(): BelongsToMany
     {
         return $this->belongsToMany(Interest::class, 'trip_interests')->withTimestamps();
+    }
+
+    /**
+     * All join requests submitted for this trip (all statuses).
+     */
+    public function joinRequests(): HasMany
+    {
+        return $this->hasMany(TripJoinRequest::class);
+    }
+
+    /**
+     * Only pending join requests for this trip (used for capacity checks).
+     */
+    public function pendingJoinRequests(): HasMany
+    {
+        return $this->hasMany(TripJoinRequest::class)
+            ->where('status', JoinRequestStatus::Pending->value);
     }
 
     // ── Computed helpers ───────────────────────────────────────────────────────
