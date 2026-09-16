@@ -116,4 +116,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cancel a pending request (requester only)
     Route::post('/trips/{trip}/join-requests/{joinRequest}/cancel', [\App\Http\Controllers\TripJoinRequestController::class, 'cancel']);
+
+    // --- F2: Connection Requests ---
+    // Send a connection request (authenticated user → discoverable user)
+    Route::post('/connections', [\App\Http\Controllers\ConnectionRequestController::class, 'store']);
+
+    // List received requests (authenticated user's inbox)
+    Route::get('/connections/received', [\App\Http\Controllers\ConnectionRequestController::class, 'received']);
+
+    // List sent requests (authenticated user's outbox)
+    Route::get('/connections/sent', [\App\Http\Controllers\ConnectionRequestController::class, 'sent']);
+
+    // Accept a received pending request (recipient only)
+    Route::post('/connections/{connectionRequest}/accept', [\App\Http\Controllers\ConnectionRequestController::class, 'accept']);
+
+    // Reject a received pending request (recipient only)
+    Route::post('/connections/{connectionRequest}/reject', [\App\Http\Controllers\ConnectionRequestController::class, 'reject']);
+
+    // Cancel a sent pending request (requester only)
+    Route::post('/connections/{connectionRequest}/cancel', [\App\Http\Controllers\ConnectionRequestController::class, 'cancel']);
 });
