@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['user_id', 'profile_photo_path', 'bio', 'city', 'country', 'languages', 'travel_style', 'preferred_budget_min', 'preferred_budget_max'])]
+#[Fillable(['user_id', 'profile_photo_path', 'bio', 'city', 'country', 'languages', 'travel_style', 'preferred_budget_min', 'preferred_budget_max', 'is_discoverable'])]
 class UserProfile extends Model
 {
     /**
@@ -21,6 +21,7 @@ class UserProfile extends Model
             'travel_style'         => TravelStyle::class,
             'preferred_budget_min' => 'decimal:2',
             'preferred_budget_max' => 'decimal:2',
+            'is_discoverable'      => 'boolean',
         ];
     }
 

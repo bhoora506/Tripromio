@@ -86,4 +86,20 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(PreferredDestination::class);
     }
+
+    /**
+     * Connection requests this user has sent (all statuses).
+     */
+    public function sentConnectionRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ConnectionRequest::class, 'requester_id');
+    }
+
+    /**
+     * Connection requests this user has received (all statuses).
+     */
+    public function receivedConnectionRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ConnectionRequest::class, 'recipient_id');
+    }
 }
