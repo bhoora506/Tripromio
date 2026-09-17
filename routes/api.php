@@ -135,4 +135,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cancel a sent pending request (requester only)
     Route::post('/connections/{connectionRequest}/cancel', [\App\Http\Controllers\ConnectionRequestController::class, 'cancel']);
+
+    // --- F3: Companion Discovery ---
+    // Paginated feed of discoverable companion profiles
+    Route::get('/companions', [\App\Http\Controllers\CompanionDiscoveryController::class, 'index']);
 });
