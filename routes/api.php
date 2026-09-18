@@ -118,6 +118,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trips/{trip}/join-requests/{joinRequest}/cancel', [\App\Http\Controllers\TripJoinRequestController::class, 'cancel']);
 
     // --- F2: Connection Requests ---
+    // List authenticated user's accepted connections
+    Route::get('/connections', [\App\Http\Controllers\ConnectionRequestController::class, 'index']);
+
     // Send a connection request (authenticated user → discoverable user)
     Route::post('/connections', [\App\Http\Controllers\ConnectionRequestController::class, 'store']);
 

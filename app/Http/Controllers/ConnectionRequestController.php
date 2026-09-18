@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ConnectionStatus;
+use App\Http\Resources\CompanionResource;
 use App\Http\Resources\ConnectionRequestResource;
 use App\Models\ConnectionRequest;
 use App\Models\User;
@@ -17,6 +19,56 @@ class ConnectionRequestController extends Controller
     public function __construct(
         private readonly ConnectionRequestService $service,
     ) {
+    }
+
+    /**
+     * List accepted connections for the authenticated user.
+     * GET /api/connections
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
+        ]);
+        $perPage = (int) ($validated['per_page'] ?? 20);
+        $userId = $request->user()->id;
+
+        $requests = ConnectionRequest::where('status', ConnectionStatus::Accepted->value)
+            ->where(function ($query) use ($userId) {
+                $query->where('requester_id', $userId)
+                      ->orWhere('recipient_id', $userId);
+            })
+            ->with([
+                'requester.profile',
+                'requester.interests',
+                'requester.preferredDestinations',
+                'recipient.profile',
+                'recipient.interests',
+                'recipient.preferredDestinations'
+            ])
+            ->latest()
+            ->paginate($perPage);
+
+        // Map connection requests to the "other" user
+        $connectedUsers = collect($requests->items())->map(function ($connectionRequest) use ($userId) {
+            return $connectionRequest->requester_id === $userId 
+                ? $connectionRequest->recipient 
+                : $connectionRequest->requester;
+        });
+
+        return $this->successResponse(
+            data: [
+                'items'      => CompanionResource::collection($connectedUsers),
+                'pagination' => [
+                    'total'        => $requests->total(),
+                    'per_page'     => $requests->perPage(),
+                    'current_page' => $requests->currentPage(),
+                    'last_page'    => $requests->lastPage(),
+                    'has_more'     => $requests->hasMorePages(),
+                ],
+            ],
+            message: 'Connections retrieved successfully.',
+        );
     }
 
     /**
