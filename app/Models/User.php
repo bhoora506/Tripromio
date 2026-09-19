@@ -102,4 +102,22 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(ConnectionRequest::class, 'recipient_id');
     }
+
+    /**
+     * Conversations where this user is the requester_id participant.
+     * Note: due to canonical ordering, requester_id = lower user ID.
+     */
+    public function sentConversations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Conversation::class, 'requester_id');
+    }
+
+    /**
+     * Conversations where this user is the recipient_id participant.
+     * Note: due to canonical ordering, recipient_id = higher user ID.
+     */
+    public function receivedConversations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Conversation::class, 'recipient_id');
+    }
 }

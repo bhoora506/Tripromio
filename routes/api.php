@@ -142,4 +142,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- F3: Companion Discovery ---
     // Paginated feed of discoverable companion profiles
     Route::get('/companions', [\App\Http\Controllers\CompanionDiscoveryController::class, 'index']);
+
+    // --- G3: Chat / Messaging ---
+    // List authenticated user's conversations
+    Route::get('/conversations', [\App\Http\Controllers\ConversationController::class, 'index']);
+
+    // Find or create a conversation with an accepted connection
+    Route::post('/conversations', [\App\Http\Controllers\ConversationController::class, 'store']);
+
+    // Retrieve paginated message history for a conversation (participants only)
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'messages']);
+
+    // Send a message in a conversation (participants only)
+    Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'sendMessage']);
+
+    // Mark messages in a conversation as read (participants only)
+    Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ConversationController::class, 'markAsRead']);
 });
