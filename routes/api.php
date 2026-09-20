@@ -76,6 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/availability', [\App\Http\Controllers\TravelAvailabilityController::class, 'store']);
     Route::put('/profile/availability/{availability}', [\App\Http\Controllers\TravelAvailabilityController::class, 'update']);
     Route::delete('/profile/availability/{availability}', [\App\Http\Controllers\TravelAvailabilityController::class, 'destroy']);
+
+    // Device Token (FCM) — Phase H1-B
+    // POST   /api/profile/device-token  — register or upsert an FCM token for this device
+    // DELETE /api/profile/device-token  — remove the FCM token for this device on logout
+    Route::post('/profile/device-token', [ProfileController::class, 'registerDeviceToken']);
+    Route::delete('/profile/device-token', [ProfileController::class, 'unregisterDeviceToken']);
 });
 
 // --- Trips ---

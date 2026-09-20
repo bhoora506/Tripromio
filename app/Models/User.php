@@ -120,4 +120,17 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Conversation::class, 'recipient_id');
     }
+
+    /**
+     * FCM device tokens registered for this user.
+     *
+     * NOTE: Never expose these tokens through any API resource.
+     * They are internal device identifiers used only for push notification
+     * routing and must not be included in UserResource, ProfileResource,
+     * CompanionResource, ConnectionRequestResource, or any other response.
+     */
+    public function userDevices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserDevice::class);
+    }
 }
