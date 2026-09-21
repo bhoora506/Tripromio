@@ -20,32 +20,46 @@ class TripService
      */
     public function createTrip(User $owner, array $data): Trip
     {
-        return DB::transaction(function () use ($owner, $data) {
-            $interestIds = $data['interest_ids'] ?? [];
-            // Remove non-model fields before creating the Trip record
-            unset($data['interest_ids']);
+        $imagePath = null;
+        if (isset($data['image'])) {
+            $imagePath = $data['image']->store('trips', 'public');
+            unset($data['image']);
+        }
 
-            $trip = Trip::create([
-                ...$data,
-                'user_id' => $owner->id,
-                'status'  => TripStatus::Draft->value,
-            ]);
+        try {
+            return DB::transaction(function () use ($owner, $data, $imagePath) {
+                $interestIds = $data['interest_ids'] ?? [];
+                // Remove non-model fields before creating the Trip record
+                unset($data['interest_ids']);
 
-            TripMember::create([
-                'trip_id'   => $trip->id,
-                'user_id'   => $owner->id,
-                'role'      => MemberRole::Owner->value,
-                'status'    => MemberStatus::Active->value,
-                'joined_at' => null, // owner creates, not joins
-            ]);
+                $trip = Trip::create([
+                    ...$data,
+                    'user_id' => $owner->id,
+                    'status'  => TripStatus::Draft->value,
+                    'image_path' => $imagePath,
+                ]);
 
-            // Sync trip interests if provided
-            if (! empty($interestIds)) {
-                $trip->interests()->sync(array_unique($interestIds));
+                TripMember::create([
+                    'trip_id'   => $trip->id,
+                    'user_id'   => $owner->id,
+                    'role'      => MemberRole::Owner->value,
+                    'status'    => MemberStatus::Active->value,
+                    'joined_at' => null, // owner creates, not joins
+                ]);
+
+                // Sync trip interests if provided
+                if (! empty($interestIds)) {
+                    $trip->interests()->sync(array_unique($interestIds));
+                }
+
+                return $trip;
+            });
+        } catch (\Throwable $e) {
+            if ($imagePath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($imagePath);
             }
-
-            return $trip;
-        });
+            throw $e;
+        }
     }
 
     /**

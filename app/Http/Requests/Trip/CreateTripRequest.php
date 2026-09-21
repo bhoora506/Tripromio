@@ -34,6 +34,7 @@ class CreateTripRequest extends FormRequest
             // Trip interests — optional on create; IDs must exist in the interests table
             'interest_ids'   => ['sometimes', 'nullable', 'array', 'max:10'],
             'interest_ids.*' => ['integer', 'exists:interests,id'],
+            'image'          => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }
 

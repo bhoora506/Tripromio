@@ -72,6 +72,7 @@ class TripResource extends JsonResource
             'description'     => $this->description,
             'max_members'     => $this->max_members,
             'status'          => $this->status?->value,
+            'image_url'       => $this->image_path ? asset('storage/' . $this->image_path) : null,
             'owner'           => new TripOwnerResource($this->whenLoaded('owner')),
             'interests'       => InterestResource::collection($this->whenLoaded('interests')),
             'member_count'    => $activeMemberCount,

@@ -292,6 +292,60 @@ class TripCrudTest extends TestCase
             ->assertJsonPath('data.trip.remaining_slots', 3);   // 4 - 1 = 3
     }
 
+    public function test_authenticated_user_can_create_trip_with_image(): void
+    {
+        $user = User::factory()->create();
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $payload = array_merge($this->validPayload(), [
+            'image' => \Illuminate\Http\Testing\File::image('banner.jpg', 600, 400),
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/trips', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.trip.title', 'Udaipur Weekend');
+
+        $this->assertNotNull($response->json('data.trip.image_url'));
+
+        $trip = Trip::where('user_id', $user->id)->first();
+        $this->assertNotNull($trip->image_path);
+
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($trip->image_path);
+    }
+
+    public function test_invalid_image_type_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $payload = array_merge($this->validPayload(), [
+            'image' => \Illuminate\Http\Testing\File::create('document.pdf', 100, 'application/pdf'),
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/trips', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['image']);
+    }
+
+    public function test_oversized_image_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $payload = array_merge($this->validPayload(), [
+            'image' => \Illuminate\Http\Testing\File::image('huge.jpg')->size(6000), // 6MB
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/trips', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['image']);
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private function validPayload(): array

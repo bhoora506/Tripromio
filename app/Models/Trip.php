@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
     'description',
     'max_members',
     'status',
+    'image_path',
 ])]
 class Trip extends Model
 {
