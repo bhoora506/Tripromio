@@ -156,6 +156,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Find or create a conversation with an accepted connection
     Route::post('/conversations', [\App\Http\Controllers\ConversationController::class, 'store']);
 
+    // Get a specific conversation
+    Route::get('/conversations/{conversation}', [\App\Http\Controllers\ConversationController::class, 'show']);
+
     // Retrieve paginated message history for a conversation (participants only)
     Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ConversationController::class, 'messages']);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
+use App\Jobs\SendChatMessageNotification;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Services\ConversationService;
@@ -135,6 +136,8 @@ class ConversationController extends Controller
 
         $message->load('sender.profile');
 
+        SendChatMessageNotification::dispatchAfterResponse($message);
+
         return $this->successResponse(
             data:    ['message' => new MessageResource($message)],
             message: 'Message sent.',
@@ -154,6 +157,22 @@ class ConversationController extends Controller
 
         return $this->successResponse(
             message: 'Messages marked as read.',
+        );
+    }
+
+    /**
+     * Retrieve a specific conversation by ID.
+     * GET /api/conversations/{conversation}
+     */
+    public function show(Conversation $conversation): JsonResponse
+    {
+        $this->authorize('view', $conversation);
+
+        $conversation->load(['requester.profile', 'recipient.profile', 'latestMessage']);
+
+        return $this->successResponse(
+            data:    ['conversation' => new ConversationResource($conversation)],
+            message: 'Conversation retrieved successfully.',
         );
     }
 }
