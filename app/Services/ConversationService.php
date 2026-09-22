@@ -6,7 +6,9 @@ use App\Enums\ConnectionStatus;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\ConnectionRequest;
+use App\Models\TripMember;
 use App\Models\User;
+use App\Enums\MemberStatus;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -53,8 +55,8 @@ class ConversationService
             throw new HttpException(409, 'You cannot start a conversation with yourself.');
         }
 
-        if (! $this->areConnected($user, $otherUser)) {
-            throw new HttpException(409, 'You can only message users you are connected with.');
+        if (! $this->canChat($user, $otherUser)) {
+            throw new HttpException(409, 'You can only message users you are directly connected with or fellow members of a shared trip.');
         }
 
         // Canonical ordering: always store the lower ID as requester_id.
@@ -88,8 +90,8 @@ class ConversationService
 
         // Re-verify connection is still accepted at send time.
         $otherUser = $conversation->otherParticipant($sender);
-        if (! $this->areConnected($sender, $otherUser)) {
-            throw new HttpException(409, 'Cannot send message: you are no longer connected with this user.');
+        if (! $this->canChat($sender, $otherUser)) {
+            throw new HttpException(409, 'You can only message users you are directly connected with or fellow members of a shared trip.');
         }
 
         $body = trim($body);
@@ -139,10 +141,19 @@ class ConversationService
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /**
+     * Determine whether user A and user B can chat.
+     */
+    public function canChat(User $userA, User $userB): bool
+    {
+        return $this->haveAcceptedConnection($userA, $userB)
+            || $this->shareActiveTrip($userA, $userB);
+    }
+
+    /**
      * Determine whether user A and user B have an accepted ConnectionRequest
      * in either direction (mirrors the query used in ConnectionRequestController@index).
      */
-    public function areConnected(User $userA, User $userB): bool
+    private function haveAcceptedConnection(User $userA, User $userB): bool
     {
         return ConnectionRequest::where('status', ConnectionStatus::Accepted->value)
             ->where(function ($query) use ($userA, $userB) {
@@ -153,6 +164,23 @@ class ConversationService
                     $inner->where('requester_id', $userB->id)
                           ->where('recipient_id', $userA->id);
                 });
+            })
+            ->exists();
+    }
+
+    /**
+     * Determine whether user A and user B share an active trip.
+     */
+    private function shareActiveTrip(User $userA, User $userB): bool
+    {
+        return TripMember::where('user_id', $userA->id)
+            ->where('status', MemberStatus::Active->value)
+            ->whereExists(function ($query) use ($userB) {
+                $query->select(DB::raw(1))
+                    ->from('trip_members as tm2')
+                    ->whereColumn('tm2.trip_id', 'trip_members.trip_id')
+                    ->where('tm2.user_id', $userB->id)
+                    ->where('tm2.status', MemberStatus::Active->value);
             })
             ->exists();
     }

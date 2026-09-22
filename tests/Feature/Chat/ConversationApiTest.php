@@ -5,6 +5,11 @@ namespace Tests\Feature\Chat;
 use App\Models\Conversation;
 use App\Models\ConnectionRequest;
 use App\Models\Message;
+use App\Models\Trip;
+use App\Models\TripMember;
+use App\Models\TripJoinRequest;
+use App\Enums\MemberStatus;
+use App\Enums\JoinRequestStatus;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -607,5 +612,197 @@ class ConversationApiTest extends TestCase
         $this->assertArrayNotHasKey('email', $sender);
         $this->assertArrayNotHasKey('password', $sender);
         $this->assertArrayNotHasKey('remember_token', $sender);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // TRIP-BASED CHAT PERMISSION
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private function makeActiveMember(Trip $trip, User $user, string $role = 'member'): TripMember
+    {
+        return TripMember::create([
+            'trip_id'   => $trip->id,
+            'user_id'   => $user->id,
+            'role'      => $role,
+            'status'    => MemberStatus::Active->value,
+            'joined_at' => now(),
+        ]);
+    }
+
+    public function test_same_active_trip_without_connection_can_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        $this->makeActiveMember($trip, $b, 'member');
+
+        $this->actingAs($a, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $b->id])
+            ->assertStatus(201)
+            ->assertJsonPath('success', true);
+    }
+
+    public function test_same_active_trip_without_connection_can_send_message(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        $this->makeActiveMember($trip, $b, 'member');
+        
+        $conv = $this->conversation($a, $b);
+
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->sendUrl($conv), ['body' => 'Hello from trip'])
+            ->assertStatus(201);
+    }
+
+    public function test_different_trips_without_connection_cannot_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip1 = Trip::factory()->create(['user_id' => $a->id]);
+        $trip2 = Trip::factory()->create(['user_id' => $b->id]);
+
+        $this->makeActiveMember($trip1, $a, 'owner');
+        $this->makeActiveMember($trip2, $b, 'owner');
+
+        $this->actingAs($a, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $b->id])
+            ->assertStatus(409);
+    }
+
+    public function test_pending_join_request_without_connection_cannot_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        TripJoinRequest::create([
+            'trip_id' => $trip->id,
+            'user_id' => $b->id,
+            'status'  => JoinRequestStatus::Pending->value,
+        ]);
+
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $a->id])
+            ->assertStatus(409);
+    }
+
+    public function test_rejected_join_request_without_connection_cannot_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        TripJoinRequest::create([
+            'trip_id' => $trip->id,
+            'user_id' => $b->id,
+            'status'  => JoinRequestStatus::Rejected->value,
+        ]);
+
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $a->id])
+            ->assertStatus(409);
+    }
+
+    public function test_left_trip_membership_without_connection_cannot_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        TripMember::create([
+            'trip_id'   => $trip->id,
+            'user_id'   => $b->id,
+            'role'      => 'member',
+            'status'    => MemberStatus::Left->value,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $a->id])
+            ->assertStatus(409);
+    }
+
+    public function test_removed_trip_membership_without_connection_cannot_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        TripMember::create([
+            'trip_id'   => $trip->id,
+            'user_id'   => $b->id,
+            'role'      => 'member',
+            'status'    => MemberStatus::Removed->value,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $a->id])
+            ->assertStatus(409);
+    }
+
+    public function test_accepted_connection_without_common_trip_can_still_chat(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $this->acceptedConnection($a, $b);
+
+        $this->actingAs($a, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $b->id])
+            ->assertStatus(201);
+    }
+
+    public function test_accepting_join_request_does_not_create_conversation(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        $this->makeActiveMember($trip, $b, 'member');
+
+        $this->assertDatabaseMissing('conversations', [
+            'requester_id' => min($a->id, $b->id),
+            'recipient_id' => max($a->id, $b->id),
+        ]);
+    }
+
+    public function test_trip_owner_and_member_can_chat_via_trip_membership(): void
+    {
+        $a = $this->makeUser();
+        $b = $this->makeUser();
+        $c = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+        $this->makeActiveMember($trip, $b, 'member');
+        $this->makeActiveMember($trip, $c, 'member');
+
+        // B and C can chat (both members)
+        $this->actingAs($b, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $c->id])
+            ->assertStatus(201);
+    }
+
+    public function test_self_chat_still_rejected_with_common_trip(): void
+    {
+        $a = $this->makeUser();
+        $trip = Trip::factory()->create(['user_id' => $a->id]);
+
+        $this->makeActiveMember($trip, $a, 'owner');
+
+        $this->actingAs($a, 'sanctum')
+            ->postJson($this->storeUrl(), ['recipient_id' => $a->id])
+            ->assertStatus(409);
     }
 }
