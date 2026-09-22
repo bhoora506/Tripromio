@@ -35,6 +35,8 @@ class UpdateTripRequest extends FormRequest
             // Trip interests — replaces the full interest list when provided (sync semantics)
             'interest_ids'   => ['sometimes', 'nullable', 'array', 'max:10'],
             'interest_ids.*' => ['integer', 'exists:interests,id'],
+            'image'          => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'remove_image'   => ['sometimes', 'boolean'],
         ];
     }
 

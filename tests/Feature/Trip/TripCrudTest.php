@@ -346,6 +346,145 @@ class TripCrudTest extends TestCase
             ->assertJsonValidationErrors(['image']);
     }
 
+    // ── Update Image ─────────────────────────────────────────────────────────
+
+    public function test_update_trip_without_image_leaves_existing_image_unchanged(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => 'trips/existing.jpg']);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson("/api/trips/{$trip->id}", ['title' => 'Updated Title'])
+            ->assertStatus(200);
+
+        $this->assertSame('trips/existing.jpg', $trip->fresh()->image_path);
+    }
+
+    public function test_update_trip_add_banner_to_trip_with_no_image(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => null]);
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'image' => \Illuminate\Http\Testing\File::image('banner.jpg', 600, 400),
+            ])
+            ->assertStatus(200);
+
+        $freshTrip = $trip->fresh();
+        $this->assertNotNull($freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($freshTrip->image_path);
+    }
+
+    public function test_update_trip_replace_existing_banner_with_new_image(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => 'trips/old_banner.jpg']);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('trips/old_banner.jpg', 'content');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'image' => \Illuminate\Http\Testing\File::image('new_banner.jpg', 600, 400),
+            ])
+            ->assertStatus(200);
+
+        $freshTrip = $trip->fresh();
+        $this->assertNotNull($freshTrip->image_path);
+        $this->assertNotSame('trips/old_banner.jpg', $freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing('trips/old_banner.jpg');
+    }
+
+    public function test_update_trip_remove_existing_banner(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => 'trips/old_banner.jpg']);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('trips/old_banner.jpg', 'content');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'remove_image' => true,
+            ])
+            ->assertStatus(200);
+
+        $freshTrip = $trip->fresh();
+        $this->assertNull($freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing('trips/old_banner.jpg');
+    }
+
+    public function test_update_trip_invalid_image_type_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'image' => \Illuminate\Http\Testing\File::create('document.pdf', 100, 'application/pdf'),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['image']);
+    }
+
+    public function test_update_trip_oversized_image_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'image' => \Illuminate\Http\Testing\File::image('huge.jpg')->size(6000), // 6MB
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['image']);
+    }
+
+    public function test_update_trip_remove_image_true_without_existing_image_is_safe(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'remove_image' => true,
+            ])
+            ->assertStatus(200);
+
+        $this->assertNull($trip->fresh()->image_path);
+    }
+
+    public function test_update_trip_image_and_remove_image_true_follows_new_image_precedence(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id, 'image_path' => 'trips/old_banner.jpg']);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('trips/old_banner.jpg', 'content');
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/trips/{$trip->id}", [
+                '_method' => 'PUT',
+                'image' => \Illuminate\Http\Testing\File::image('new_banner.jpg', 600, 400),
+                'remove_image' => true, // Should be ignored in favor of the new image
+            ])
+            ->assertStatus(200);
+
+        $freshTrip = $trip->fresh();
+        $this->assertNotNull($freshTrip->image_path);
+        $this->assertNotSame('trips/old_banner.jpg', $freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($freshTrip->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing('trips/old_banner.jpg');
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private function validPayload(): array

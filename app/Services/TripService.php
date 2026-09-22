@@ -78,6 +78,10 @@ class TripService
     {
         $interestIds = array_key_exists('interest_ids', $data) ? $data['interest_ids'] : false;
         unset($data['interest_ids']);
+        
+        $image = array_key_exists('image', $data) ? $data['image'] : false;
+        $removeImage = array_key_exists('remove_image', $data) ? filter_var($data['remove_image'], FILTER_VALIDATE_BOOLEAN) : false;
+        unset($data['image'], $data['remove_image']);
 
         match ($trip->status) {
             TripStatus::Completed,
@@ -88,7 +92,36 @@ class TripService
             default => null,
         };
 
-        $trip->update($data);
+        if ($trip->status === TripStatus::Ongoing) {
+            $image = false;
+            $removeImage = false;
+        }
+
+        $oldImagePath = $trip->image_path;
+        $newImagePath = null;
+        $shouldDeleteOld = false;
+
+        if ($image) {
+            $newImagePath = $image->store('trips', 'public');
+            $data['image_path'] = $newImagePath;
+            $shouldDeleteOld = true;
+        } elseif ($removeImage) {
+            $data['image_path'] = null;
+            $shouldDeleteOld = true;
+        }
+
+        try {
+            $trip->update($data);
+        } catch (\Throwable $e) {
+            if ($newImagePath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($newImagePath);
+            }
+            throw $e;
+        }
+
+        if ($shouldDeleteOld && $oldImagePath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldImagePath);
+        }
 
         // Sync interests only when the key was explicitly present in the request
         if ($interestIds !== false) {
