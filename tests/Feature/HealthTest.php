@@ -39,7 +39,7 @@ class HealthTest extends TestCase
 
         $response->assertJson([
             'success' => true,
-            'message' => 'Tripromio API is running',
+            'message' => 'Travelromio API is running',
             'data'    => ['status' => 'ok'],
         ]);
     }

@@ -18,7 +18,7 @@ class HealthController extends Controller
     {
         return $this->successResponse(
             data: ['status' => 'ok'],
-            message: 'Tripromio API is running',
+            message: 'Travelromio API is running',
         );
     }
 }
